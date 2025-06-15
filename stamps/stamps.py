@@ -27,7 +27,7 @@ ANCHOR_DEFAULTS = {
 WIRED_DEFAULTS = {
     "tile_color": int('%02x%02x%02x%02x' % (1, 0, 0, 1), 16),
     "autolabel": 'nuke.thisNode().knob("title").value()',
-    "knobChanged": 'import stamps; stamps.wiredKnobChanged()'
+    "knobChanged": 'if nuke.GUI:\n    try:\n        import stamps; stamps.wiredKnobChanged()\n    except:\n        pass'
 }
 
 DeepExceptionClasses = ["DeepToImage", "DeepHoldout", "DeepHoldout2"]  # Nodes with "Deep" in their class that don't classify as Deep.
@@ -2953,5 +2953,7 @@ def goStamp(ns=""):
             except Exception:
                 continue
 
-stampBuildMenus()
+if nuke.GUI:
+    stampBuildMenus()
+
 addIncludesPath()
