@@ -73,6 +73,14 @@ from functools import partial
 import sys
 import os
 
+# Workaround for Nuke NC to prevent 10-node limit while creating stamps
+def nuke_allNodes(filter = ""):
+    allNodes = nuke.allNodes(filter)
+    if nuke.env.get("nc"):
+        return allNodes[:2]
+    else:
+        return allNodes
+
 # Python 3 compatibility: define 'unicode' if running in Python 3.
 if sys.version_info[0] >= 3:
     unicode = str
@@ -534,7 +542,7 @@ def wiredReconnectSimilar(anchor_name=""):
     """
     if anchor_name == "":
         anchor_name = nuke.thisNode().knob("anchor").value()
-    for node in nuke.allNodes():
+    for node in nuke_allNodes():
         if isWired(node) and node.knob("anchor").value() == anchor_name:
             reconnectErrors = 0
             try:
@@ -551,7 +559,7 @@ def wiredReconnectAll():
     """
     Reconnect all wired nodes in the script.
     """
-    for node in nuke.allNodes():
+    for node in nuke_allNodes():
         if isWired(node):
             reconnectErrors = 0
             try:
@@ -578,7 +586,7 @@ def wiredReconnectByTitle(title=""):
     if title == "":
         title = n.knob("title").value()
     matches = []
-    for node in nuke.allNodes():
+    for node in nuke_allNodes():
         if isAnchor(node) and node.knob("title").value() == title:
             matches.append(node)
 
@@ -621,7 +629,7 @@ def wiredReconnectByTitleSimilar(title=""):
         return
 
     anchor_name = n.knob("anchor").value()
-    siblings = [node for node in nuke.allNodes() if isWired(node) and node.knob("anchor").value() == anchor_name]
+    siblings = [node for node in nuke_allNodes() if isWired(node) and node.knob("anchor").value() == anchor_name]
 
     if num_matches == 1:  # One match -> Connect
         anchor = matches[0]
@@ -707,7 +715,7 @@ def wiredReconnectBySelectionSimilar():
         nuke.message("Please select an Anchor Stamp.")
     else:
         anchor_name = n.knob("anchor").value()
-        siblings = [node for node in nuke.allNodes() if isWired(node) and node.knob("anchor").value() == anchor_name]
+        siblings = [node for node in nuke_allNodes() if isWired(node) and node.knob("anchor").value() == anchor_name]
         for s in siblings:
             Stamps_LockCallbacks = True
             s["anchor"].setValue(ns[0].name())
@@ -859,7 +867,7 @@ wiredOnCreate_code = """if nuke.GUI:
 wiredReconnectToTitle_code = """n = nuke.thisNode()
 try:
     nt = n.knob("title").value()
-    for a in nuke.allNodes():
+    for a in nuke_allNodes():
         if a.knob("identifier").value() == "anchor" and a.knob("title").value() == nt:
             n.setInput(0, a)
             break
@@ -1905,7 +1913,7 @@ def getDefaultTitle(node=None):
     # Handle Camera nodes.
     if "Camera" in node.Class():
         try:
-            if not any(i.knob("title") and i["title"].value() == "cam" for i in nuke.allNodes("NoOp")):
+            if not any(i.knob("title") and i["title"].value() == "cam" for i in nuke_allNodes("NoOp")):
                 return "cam"
         except Exception:
             pass
@@ -2242,7 +2250,7 @@ def allAnchors(selection=""):
     Returns:
         list: Anchor nodes.
     """
-    nodes = nuke.allNodes()
+    nodes = nuke_allNodes()
     if selection == "":
         anchors = [a for a in nodes if isAnchor(a)]
     else:
@@ -2260,7 +2268,7 @@ def allWireds(selection=""):
     Returns:
         list: Wired nodes.
     """
-    nodes = nuke.allNodes()
+    nodes = nuke_allNodes()
     if selection == "":
         wireds = [a for a in nodes if isWired(a)]
     else:
@@ -2390,7 +2398,7 @@ def findBackdrops(node=""):
     h = node.screenHeight()
 
     backdrops = []
-    for b in nuke.allNodes("BackdropNode"):
+    for b in nuke_allNodes("BackdropNode"):
         try:
             bx = int(b['xpos'].value())
             by = int(b['ypos'].value())
@@ -2561,7 +2569,7 @@ def allToNoOp():
     """
     Convert all stamp nodes (Anchors and Wired) into NoOp nodes.
     """
-    for n in nuke.allNodes():
+    for n in nuke_allNodes():
         if stampType(n) and n.Class() != "NoOp":
             toNoOp(n)
 
@@ -2640,7 +2648,7 @@ def addTags(ns=""):
     if not len(ns):
         if not nuke.ask("Nothing is selected. Do you wish to add tags to ALL nodes in the script?"):
             return
-        ns = nuke.allNodes()
+        ns = nuke_allNodes()
 
     global stamps_addTags_panel
     stamps_addTags_panel = AddTagsPanel(all_tags=allTags(), default_tags="")
@@ -2700,13 +2708,13 @@ def renameTag(ns=""):
     if ns == "":
         ns = nuke.selectedNodes()
     if not len(ns):
-        ns = nuke.allNodes()
+        ns = nuke_allNodes()
     global stamps_renameTag_panel
     stamps_renameTag_panel = RenameTagPanel(all_tags=allTags())
     if stamps_renameTag_panel.exec_():
         all_nodes = stamps_renameTag_panel.allNodes
         if all_nodes:
-            ns = nuke.allNodes()
+            ns = nuke_allNodes()
         tag_to_rename = str(stamps_renameTag_panel.tag.strip())
         tag_replace = str(stamps_renameTag_panel.tagReplace.strip())
         count = 0
